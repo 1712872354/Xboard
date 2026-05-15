@@ -3,8 +3,10 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { useAppStore } from '@/stores/app'
+import { ElTable, ElTableColumn, ElPagination, ElButton, ElInput, ElSelect, ElCheckbox, ElCard, ElTag } from 'element-plus'
 import { formatBytes, formatTimestamp } from '@/utils/format'
 import { Plus, Search, Filter, Edit, Eye, Trash2, Ban, RefreshCw, Download, MoreVertical } from 'lucide-vue-next'
+import type { User } from '@/types'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -80,8 +82,8 @@ function getStatusText(banned: boolean): string {
   return banned ? '封禁' : '正常'
 }
 
-function getStatusClass(banned: boolean): string {
-  return banned ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'
+function getStatusType(banned: boolean): string {
+  return banned ? 'danger' : 'success'
 }
 
 function toggleSelect(id: number) {
@@ -101,6 +103,14 @@ function selectAll() {
   }
 }
 
+function formatTraffic(user: User): string {
+  return `${formatBytes(user.u + user.d)} / ${formatBytes(user.transfer_enable)}`
+}
+
+function getTrafficPercent(user: User): number {
+  return Math.min((user.u + user.d) / user.transfer_enable * 100, 100)
+}
+
 onMounted(() => {
   fetchUsers()
 })
@@ -111,231 +121,128 @@ onMounted(() => {
     <div class="flex items-center justify-between">
       <div>
         <h1 class="text-2xl font-bold text-white">用户管理</h1>
-        <p class="text-gray-400 mt-1">管理系统用户</p>
+        <p class="text-slate-400 mt-1">管理系统用户</p>
       </div>
       <div class="flex items-center gap-3">
-        <button
-          class="flex items-center gap-2 px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
-          @click="showFilters = !showFilters"
-        >
-          <Filter class="w-4 h-4" />
+        <ElButton icon="Filter" text class="text-slate-300 hover:text-white" @click="showFilters = !showFilters">
           筛选
-        </button>
-        <button class="flex items-center gap-2 px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors">
-          <Download class="w-4 h-4" />
+        </ElButton>
+        <ElButton icon="Download" text class="text-slate-300 hover:text-white">
           导出
-        </button>
-        <button
-          class="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary/90 text-white rounded-lg transition-colors"
-          @click="router.push('/admin/user/detail/0')"
-        >
-          <Plus class="w-4 h-4" />
+        </ElButton>
+        <ElButton icon="Plus" type="primary" @click="router.push('/admin/user/detail/0')">
           创建用户
-        </button>
+        </ElButton>
       </div>
     </div>
 
-    <div v-if="showFilters" class="bg-gray-800 rounded-xl p-4 border border-gray-700">
+    <div v-if="showFilters" class="bg-slate-800 rounded-xl p-4 border border-slate-700">
       <div class="flex flex-wrap items-center gap-4">
         <div class="flex-1 max-w-md">
-          <label class="block text-sm text-gray-400 mb-2">搜索关键词</label>
-          <input
+          <label class="block text-sm text-slate-400 mb-2">搜索关键词</label>
+          <ElInput
             v-model="searchKeyword"
-            type="text"
             placeholder="搜索邮箱..."
-            class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-primary"
+            prefix-icon="Search"
           />
         </div>
         <div>
-          <label class="block text-sm text-gray-400 mb-2">状态</label>
-          <select
-            v-model="statusFilter"
-            class="px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-primary"
-          >
-            <option v-for="option in statusOptions" :key="option.value" :value="option.value">
-              {{ option.label }}
-            </option>
-          </select>
+          <label class="block text-sm text-slate-400 mb-2">状态</label>
+          <ElSelect v-model="statusFilter" placeholder="请选择状态">
+            <ElOption v-for="option in statusOptions" :key="option.value" :label="option.label" :value="option.value" />
+          </ElSelect>
         </div>
         <div class="flex items-end">
-          <button
-            class="px-4 py-2 bg-primary hover:bg-primary/90 text-white rounded-lg transition-colors"
-            @click="fetchUsers"
-          >
-            应用筛选
-          </button>
+          <ElButton type="primary" @click="fetchUsers">应用筛选</ElButton>
         </div>
       </div>
     </div>
 
-    <div class="bg-gray-800 rounded-xl border border-gray-700 overflow-hidden">
-      <div class="p-4 border-b border-gray-700">
-        <div class="flex items-center justify-between">
-          <div class="flex items-center gap-4">
-            <label class="flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                :checked="selectedUsers.length === userStore.list.length && userStore.list.length > 0"
-                class="w-4 h-4 rounded border-gray-600 bg-gray-700 text-primary focus:ring-primary"
-                @click="selectAll"
-              />
-              <span class="text-gray-400 text-sm">全选</span>
-            </label>
-            <span v-if="selectedUsers.length > 0" class="text-gray-400 text-sm">
-              已选择 {{ selectedUsers.length }} 项
-            </span>
-          </div>
-          <div class="flex items-center gap-2">
-            <button
-              class="p-2 text-gray-400 hover:bg-gray-700 hover:text-white rounded-lg transition-colors"
-              title="刷新"
-              @click="fetchUsers"
-            >
-              <RefreshCw class="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <div class="overflow-x-auto">
-        <table class="w-full">
-          <thead>
-            <tr class="bg-gray-700/50">
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                <input
-                  type="checkbox"
-                  :checked="selectedUsers.length === userStore.list.length && userStore.list.length > 0"
-                  class="w-4 h-4 rounded border-gray-600 bg-gray-700 text-primary focus:ring-primary"
-                  @click="selectAll"
-                />
-              </th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">邮箱</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">套餐</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">流量使用</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">余额</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">状态</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">创建时间</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">操作</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-gray-700">
-            <tr v-for="user in userStore.list" :key="user.id" class="hover:bg-gray-700/30 transition-colors">
-              <td class="px-4 py-4">
-                <input
-                  type="checkbox"
-                  :checked="selectedUsers.includes(user.id)"
-                  class="w-4 h-4 rounded border-gray-600 bg-gray-700 text-primary focus:ring-primary"
-                  @click="toggleSelect(user.id)"
-                />
-              </td>
-              <td class="px-4 py-4">
-                <span class="text-white font-medium">{{ user.email }}</span>
-              </td>
-              <td class="px-4 py-4">
-                <span class="text-gray-400 text-sm">套餐 {{ user.plan_id || '-' }}</span>
-              </td>
-              <td class="px-4 py-4">
-                <div class="flex items-center gap-2">
-                  <span class="text-gray-400 text-sm">
-                    {{ formatBytes(user.u + user.d) }} / {{ formatBytes(user.transfer_enable) }}
-                  </span>
-                </div>
-                <div class="mt-1 h-1.5 w-32 bg-gray-700 rounded-full overflow-hidden">
-                  <div
-                    class="h-full bg-primary rounded-full"
-                    :style="{ width: `${Math.min((user.u + user.d) / user.transfer_enable * 100, 100)}%` }"
-                  ></div>
-                </div>
-              </td>
-              <td class="px-4 py-4">
-                <span class="text-green-400">¥{{ user.balance.toFixed(2) }}</span>
-              </td>
-              <td class="px-4 py-4">
-                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium" :class="getStatusClass(user.banned)">
-                  {{ getStatusText(user.banned) }}
-                </span>
-              </td>
-              <td class="px-4 py-4">
-                <span class="text-gray-400 text-sm">{{ formatTimestamp(user.created_at) }}</span>
-              </td>
-              <td class="px-4 py-4">
-                <div class="flex items-center gap-2">
-                  <button
-                    class="p-2 text-gray-400 hover:bg-gray-700 hover:text-white rounded-lg transition-colors"
-                    title="查看详情"
-                    @click="handleView(user.id)"
-                  >
-                    <Eye class="w-4 h-4" />
-                  </button>
-                  <button
-                    class="p-2 text-gray-400 hover:bg-gray-700 hover:text-white rounded-lg transition-colors"
-                    title="编辑"
-                    @click="handleEdit(user.id)"
-                  >
-                    <Edit class="w-4 h-4" />
-                  </button>
-                  <button
-                    class="p-2 text-gray-400 hover:bg-gray-700 hover:text-red-400 rounded-lg transition-colors"
-                    title="重置流量"
-                    @click="handleResetTraffic(user.id)"
-                  >
-                    <RefreshCw class="w-4 h-4" />
-                  </button>
-                  <button
-                    class="p-2 text-gray-400 hover:bg-gray-700 hover:text-yellow-400 rounded-lg transition-colors"
-                    title="封禁/解封"
-                    @click="handleBan(user.id, !user.banned)"
-                  >
-                    <Ban class="w-4 h-4" />
-                  </button>
-                  <button
-                    class="p-2 text-gray-400 hover:bg-gray-700 hover:text-red-400 rounded-lg transition-colors"
-                    title="删除"
-                    @click="handleDelete(user.id)"
-                  >
-                    <Trash2 class="w-4 h-4" />
-                  </button>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-
-        <div v-if="userStore.list.length === 0" class="py-12 text-center">
-          <p class="text-gray-400">暂无数据</p>
-        </div>
-      </div>
-
-      <div v-if="userStore.pagination.total > 0" class="p-4 border-t border-gray-700">
-        <div class="flex items-center justify-between">
-          <span class="text-gray-400 text-sm">
-            显示 {{ (userStore.pagination.page - 1) * userStore.pagination.page_size + 1 }} - 
-            {{ Math.min(userStore.pagination.page * userStore.pagination.page_size, userStore.pagination.total) }} 
-            条，共 {{ userStore.pagination.total }} 条
+    <ElCard class="border-slate-700">
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center gap-4">
+          <ElCheckbox :checked="selectedUsers.length === userStore.list.length && userStore.list.length > 0" @change="selectAll">
+            全选
+          </ElCheckbox>
+          <span v-if="selectedUsers.length > 0" class="text-slate-400 text-sm">
+            已选择 {{ selectedUsers.length }} 项
           </span>
-          <div class="flex items-center gap-2">
-            <button
-              class="px-3 py-1 text-sm text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              :disabled="userStore.pagination.page === 1"
-              @click="handlePageChange(userStore.pagination.page - 1)"
-            >
-              上一页
-            </button>
-            <button
-              class="px-3 py-1 text-sm bg-primary text-white rounded-lg"
-            >
-              {{ userStore.pagination.page }}
-            </button>
-            <button
-              class="px-3 py-1 text-sm text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              :disabled="userStore.pagination.page >= Math.ceil(userStore.pagination.total / userStore.pagination.page_size)"
-              @click="handlePageChange(userStore.pagination.page + 1)"
-            >
-              下一页
-            </button>
-          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <ElButton icon="RefreshCw" text class="text-slate-400 hover:text-white" @click="fetchUsers">
+            刷新
+          </ElButton>
         </div>
       </div>
-    </div>
+
+      <ElTable :data="userStore.list" :border="false" class="bg-slate-800">
+        <ElTableColumn type="selection" width="55" />
+        <ElTableColumn prop="email" label="邮箱" min-width="200">
+          <template #default="scope">
+            <span class="text-white font-medium">{{ scope.row.email }}</span>
+          </template>
+        </ElTableColumn>
+        <ElTableColumn prop="plan_id" label="套餐" min-width="100">
+          <template #default="scope">
+            <span class="text-slate-400 text-sm">套餐 {{ scope.row.plan_id || '-' }}</span>
+          </template>
+        </ElTableColumn>
+        <ElTableColumn label="流量使用" min-width="200">
+          <template #default="scope">
+            <div>
+              <div class="text-slate-400 text-sm">{{ formatTraffic(scope.row) }}</div>
+              <div class="mt-1 h-1.5 w-32 bg-slate-700 rounded-full overflow-hidden">
+                <div
+                  class="h-full bg-indigo-500 rounded-full transition-all"
+                  :style="{ width: `${getTrafficPercent(scope.row)}%` }"
+                ></div>
+              </div>
+            </div>
+          </template>
+        </ElTableColumn>
+        <ElTableColumn prop="balance" label="余额" min-width="100">
+          <template #default="scope">
+            <span class="text-green-400">¥{{ scope.row.balance.toFixed(2) }}</span>
+          </template>
+        </ElTableColumn>
+        <ElTableColumn prop="banned" label="状态" min-width="80">
+          <template #default="scope">
+            <ElTag :type="getStatusType(scope.row.banned)">
+              {{ getStatusText(scope.row.banned) }}
+            </ElTag>
+          </template>
+        </ElTableColumn>
+        <ElTableColumn prop="created_at" label="创建时间" min-width="120">
+          <template #default="scope">
+            <span class="text-slate-400 text-sm">{{ formatTimestamp(scope.row.created_at) }}</span>
+          </template>
+        </ElTableColumn>
+        <ElTableColumn label="操作" width="180">
+          <template #default="scope">
+            <div class="flex items-center gap-1">
+              <ElButton icon="Eye" text size="small" @click="handleView(scope.row.id)" />
+              <ElButton icon="Edit" text size="small" @click="handleEdit(scope.row.id)" />
+              <ElButton icon="RefreshCw" text size="small" @click="handleResetTraffic(scope.row.id)" />
+              <ElButton icon="Ban" text size="small" @click="handleBan(scope.row.id, !scope.row.banned)" />
+              <ElButton icon="Trash2" text size="small" class="text-red-400 hover:text-red-300" @click="handleDelete(scope.row.id)" />
+            </div>
+          </template>
+        </ElTableColumn>
+      </ElTable>
+
+      <div v-if="userStore.list.length === 0" class="py-12 text-center">
+        <p class="text-slate-400">暂无数据</p>
+      </div>
+
+      <div v-if="userStore.pagination.total > 0" class="mt-4">
+        <ElPagination
+          :current-page="userStore.pagination.page"
+          :page-size="userStore.pagination.page_size"
+          :total="userStore.pagination.total"
+          layout="total, prev, pager, next"
+          @current-change="handlePageChange"
+        />
+      </div>
+    </ElCard>
   </div>
 </template>

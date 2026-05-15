@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useAppStore } from '@/stores/app'
+import { ElForm, ElFormItem, ElInput, ElButton, ElCheckbox, ElCard } from 'element-plus'
 import { Mail, Lock, Eye, EyeOff, LogIn } from 'lucide-vue-next'
 
 const router = useRouter()
@@ -35,89 +36,73 @@ async function handleLogin() {
 </script>
 
 <template>
-  <div class="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center p-4">
+  <div class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4">
     <div class="w-full max-w-md">
-      <div class="bg-gray-800/50 backdrop-blur-sm rounded-2xl border border-gray-700 shadow-2xl overflow-hidden">
-        <div class="p-8">
-          <div class="text-center mb-8">
-            <div class="inline-flex items-center justify-center w-16 h-16 rounded-xl bg-primary/20 mb-4">
-              <span class="text-3xl font-bold text-primary">X</span>
-            </div>
-            <h1 class="text-2xl font-bold text-white">Xboard</h1>
-            <p class="text-gray-400 mt-2">代理协议管理面板</p>
+      <ElCard class="border-slate-700 shadow-2xl" style="background: rgba(30, 41, 59, 0.8); backdrop-filter: blur(10px);">
+        <div class="text-center mb-8">
+          <div class="inline-flex items-center justify-center w-16 h-16 rounded-xl bg-indigo-500/20 mb-4">
+            <span class="text-3xl font-bold text-indigo-400">X</span>
           </div>
-
-          <form @submit.prevent="handleLogin" class="space-y-6">
-            <div>
-              <label class="block text-sm font-medium text-gray-300 mb-2">邮箱</label>
-              <div class="relative">
-                <Mail class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                <input
-                  v-model="email"
-                  type="email"
-                  placeholder="请输入邮箱"
-                  class="w-full pl-12 pr-4 py-3 bg-gray-700/50 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-primary transition-colors"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label class="block text-sm font-medium text-gray-300 mb-2">密码</label>
-              <div class="relative">
-                <Lock class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                <input
-                  v-model="password"
-                  :type="showPassword ? 'text' : 'password'"
-                  placeholder="请输入密码"
-                  class="w-full pl-12 pr-12 py-3 bg-gray-700/50 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-primary transition-colors"
-                />
-                <button
-                  type="button"
-                  class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
-                  @click="showPassword = !showPassword"
-                >
-                  <Eye v-if="!showPassword" class="w-5 h-5" />
-                  <EyeOff v-else class="w-5 h-5" />
-                </button>
-              </div>
-            </div>
-
-            <div class="flex items-center justify-between">
-              <label class="flex items-center gap-2 cursor-pointer">
-                <input
-                  v-model="remember"
-                  type="checkbox"
-                  class="w-4 h-4 rounded border-gray-600 bg-gray-700 text-primary focus:ring-primary"
-                />
-                <span class="text-sm text-gray-400">记住我</span>
-              </label>
-              <a href="#" class="text-sm text-primary hover:text-primary/80 transition-colors">
-                忘记密码？
-              </a>
-            </div>
-
-            <button
-              type="submit"
-              :disabled="loading"
-              class="w-full flex items-center justify-center gap-2 px-4 py-3 bg-primary hover:bg-primary/90 text-white font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <LogIn class="w-5 h-5" />
-              {{ loading ? '登录中...' : '登 录' }}
-            </button>
-          </form>
-
-          <div class="mt-6 text-center">
-            <p class="text-gray-400 text-sm">
-              还没有账号？
-              <a href="#" class="text-primary hover:text-primary/80 transition-colors">
-                联系管理员
-              </a>
-            </p>
-          </div>
+          <h1 class="text-2xl font-bold text-white">Xboard</h1>
+          <p class="text-slate-400 mt-2">代理协议管理面板</p>
         </div>
-      </div>
 
-      <p class="text-center text-gray-500 text-sm mt-6">
+        <ElForm @submit.prevent="handleLogin" class="space-y-6">
+          <ElFormItem>
+            <label class="block text-sm font-medium text-slate-300 mb-2">邮箱</label>
+            <ElInput
+              v-model="email"
+              type="email"
+              placeholder="请输入邮箱"
+              prefix-icon="Mail"
+              class="bg-slate-700/50 border-slate-600 text-white placeholder-slate-400"
+            />
+          </ElFormItem>
+
+          <ElFormItem>
+            <label class="block text-sm font-medium text-slate-300 mb-2">密码</label>
+            <ElInput
+              v-model="password"
+              :type="showPassword ? 'text' : 'password'"
+              placeholder="请输入密码"
+              prefix-icon="Lock"
+              :suffix-icon="showPassword ? 'EyeOff' : 'Eye'"
+              class="bg-slate-700/50 border-slate-600 text-white placeholder-slate-400"
+              @click-suffix="showPassword = !showPassword"
+            />
+          </ElFormItem>
+
+          <div class="flex items-center justify-between">
+            <ElCheckbox v-model="remember" class="text-slate-400">
+              <span class="text-sm text-slate-400">记住我</span>
+            </ElCheckbox>
+            <a href="#" class="text-sm text-indigo-400 hover:text-indigo-300 transition-colors">
+              忘记密码？
+            </a>
+          </div>
+
+          <ElButton
+            type="primary"
+            native-type="submit"
+            :loading="loading"
+            class="w-full h-11 text-base font-medium"
+          >
+            <LogIn class="w-5 h-5 mr-2" />
+            {{ loading ? '登录中...' : '登 录' }}
+          </ElButton>
+        </ElForm>
+
+        <div class="mt-6 text-center">
+          <p class="text-slate-400 text-sm">
+            还没有账号？
+            <a href="#" class="text-indigo-400 hover:text-indigo-300 transition-colors">
+              联系管理员
+            </a>
+          </p>
+        </div>
+      </ElCard>
+
+      <p class="text-center text-slate-500 text-sm mt-6">
         © 2024 Xboard. All rights reserved.
       </p>
     </div>
